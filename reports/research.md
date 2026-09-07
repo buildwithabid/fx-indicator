@@ -45,3 +45,44 @@ No rule set tested has a positive expectancy on 15m majors after realistic costs
 non-repainting **risk-management and discipline tool** (hard SL/TP, position size, session and news gating, daily
 loss limit), not a proven signal source. Do not size it as if it had an edge. See README for what would be needed
 to change that conclusion.
+
+---
+
+# Part 2 — ICT / Smart Money Concepts model (added 2026-09-07, same session)
+
+Requested concepts: multi-timeframe bias (5m/1H/4H/Daily), market structure BOS/CHoCH, liquidity sweep,
+order-block zone, entry, SL, TP1/TP2/TP3, risk:reward. Implemented deterministically in `py/fx/smc.py`
+(swings = pivots confirmed 3 bars later; BOS = close beyond last confirmed swing; CHoCH = BOS against trend;
+sweep = wick through a swing low/high with close back inside; displacement = body ≥ 1×ATR closing above the
+prior 5-bar high; order block = last opposite candle within 5 bars before displacement, zone = [low, open];
+limit entry at zone top valid 12 bars; SL = zone bottom − 0.1 ATR, min 0.8 ATR, max 3 ATR; TP1/2/3 at 1R/2R/3R,
+one third each, stop to breakeven after TP1). HTF bias = structure trend on the last closed 1H / 4H / Daily bar.
+
+## In-sample (2019–2022), all 5 pairs
+| Variant | Exit | Trades | WR | Exp | PF |
+|---|---|---|---|---|---|
+| S1 sweep → displacement → OB limit, bias 4H+1H | TP1/2/3 | 211 | 60% | +0.00R | 1.00 |
+| S2 same, bias Daily+4H+1H | TP1/2/3 | 142 | 62% | +0.10R | 1.21 |
+| S3 same, 15m structure only (no HTF bias) | TP1/2/3 | 495 | 60% | −0.04R | 0.92 |
+| **S4 displacement → OB, no sweep required, bias D+4H+1H** | TP1/2/3 | 688 | 63% | **+0.08R** | 1.17 |
+| S4 | single TP 2R | 688 | 40% | +0.06R | 1.08 |
+| S2 entry at 50% of block | TP1/2/3 | 108 | 69% | +0.05R | 1.12 |
+| S4 entry at 50% of block | TP1/2/3 | 548 | 64% | +0.05R | 1.10 |
+| Any variant on **5m** entries | any | 271–1534 | 49–56% | **−0.19 … −0.40R** | 0.53–0.75 |
+
+5-minute entries are ruled out: costs are 3–4× larger relative to the stop distance.
+
+## Holdout (2023-01 … 2026-08), run once on the two pre-declared configs
+| Config | Trades | WR | Exp | PF | t-stat | Years positive |
+|---|---|---|---|---|---|---|
+| S4 (best IS sample) | 642 | 58% | **−0.08R** | 0.85 | −1.7 | 0 of 4 |
+| S2 (with sweep) | 117 | 58% | −0.06R | 0.89 | −0.5 | 2 of 4 |
+
+The in-sample positive was noise/overfit. The higher win rate (58–63% vs 32% for v1) is an artefact of
+scaling out at 1R and moving the stop to breakeven — it does not translate into expectancy. Net of costs
+the SMC entries are, like v1, indistinguishable from random.
+
+## Verdict
+ICT/SMC concepts did **not** increase accuracy. They are shipped in `dist/smc_indicator.pine` because the
+structure/liquidity/order-block visuals, TP1/2/3 levels and R:R are useful for disciplined manual trading,
+with the same hard risk controls. They are not a validated edge.

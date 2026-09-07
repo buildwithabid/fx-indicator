@@ -10,8 +10,10 @@ RAW = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
 PAIRS = ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD"]
 
 
-def load_m15(pair: str, raw_dir: str = RAW) -> pd.DataFrame:
-    files = sorted(glob.glob(os.path.join(raw_dir, f"{pair.lower()}-m15-bid-*.csv")))
+def load_m15(pair: str, raw_dir: str = RAW, tf: str = "m15") -> pd.DataFrame:
+    if tf != "m15":
+        raw_dir = raw_dir + "_" + tf
+    files = sorted(glob.glob(os.path.join(raw_dir, f"{pair.lower()}-{tf}-bid-*.csv")))
     if not files:
         raise FileNotFoundError(f"no raw csv for {pair} in {raw_dir}")
     parts = [pd.read_csv(f) for f in files]

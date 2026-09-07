@@ -51,18 +51,19 @@ def read_m1(path: str) -> pd.DataFrame:
     return df[["open", "high", "low", "close"]].astype(float)
 
 
-def to_m15(m1: pd.DataFrame) -> pd.DataFrame:
-    o = m1["open"].resample("15min", label="left", closed="left").first()
-    h = m1["high"].resample("15min", label="left", closed="left").max()
-    l = m1["low"].resample("15min", label="left", closed="left").min()
-    c = m1["close"].resample("15min", label="left", closed="left").last()
+def to_m15(m1: pd.DataFrame, rule: str = "15min") -> pd.DataFrame:
+    o = m1["open"].resample(rule, label="left", closed="left").first()
+    h = m1["high"].resample(rule, label="left", closed="left").max()
+    l = m1["low"].resample(rule, label="left", closed="left").min()
+    c = m1["close"].resample(rule, label="left", closed="left").last()
     return pd.DataFrame({"open": o, "high": h, "low": l, "close": c}).dropna()
 
 
-def fetch_year(pair: str, year: int):
-    os.makedirs(RAW, exist_ok=True)
+def fetch_year(pair: str, year: int, tf: str = "m15"):
+    raw_dir = RAW if tf == "m15" else RAW + "_" + tf
+    os.makedirs(raw_dir, exist_ok=True)
     stop = dt.date(year + 1, 1, 1) if year < TODAY.year else dt.date(TODAY.year, TODAY.month, 1)
-    out = os.path.join(RAW, f"{pair.lower()}-m15-bid-{year}-01-01-{stop}.csv")
+    out = os.path.join(raw_dir, f"{pair.lower()}-{tf}-bid-{year}-01-01-{stop}.csv")
     if os.path.exists(out):
         print("skip", os.path.basename(out))
         return
@@ -72,7 +73,7 @@ def fetch_year(pair: str, year: int):
         parts = [read_m1(fetch_zip(pair, year, m)) for m in range(1, TODAY.month)]
     m1 = pd.concat(parts).sort_index()
     m1 = m1[~m1.index.duplicated(keep="last")]
-    m15 = to_m15(m1)
+    m15 = to_m15(m1, {"m15": "15min", "m5": "5min"}[tf])
     m15 = m15[m15.index < pd.Timestamp(stop, tz="UTC")]
     dec = 3 if pair.endswith("JPY") else 5
     with open(out, "w") as f:
@@ -83,7 +84,11 @@ def fetch_year(pair: str, year: int):
 
 
 if __name__ == "__main__":
-    pairs = sys.argv[1:] or ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD"]
+    args = sys.argv[1:]
+    tf = "m15"
+    if args and args[0] in ("m15", "m5"):
+        tf = args.pop(0)
+    pairs = args or ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD"]
     for pair in pairs:
         for y in range(2019, TODAY.year + 1):
-            fetch_year(pair, y)
+            fetch_year(pair, y, tf)

@@ -14,13 +14,19 @@ A Python backtest of the identical rules on 7.7 years of free M15 data lives in 
 | Walk-forward tuned, out-of-sample | 1,194 | 31.7% | −0.145R | 0.80 |
 
 Eight alternative entry concepts and two exit schemes were also tested in-sample; none was positive
-(`reports/research.md`). What the tool *does* deliver: non-repainting signals, a hard stop and target on every
+(`reports/research.md`). An ICT / Smart Money Concepts model (Daily/4H/1H structure bias, BOS/CHoCH, liquidity
+sweeps, displacement, order-block limit entries, TP1/2/3 scale-out) looked positive in-sample (+0.08R) and
+failed the holdout (−0.08R, 642 trades, negative every year). 5-minute entries lose −0.2 to −0.4R per trade. What the tool *does* deliver: non-repainting signals, a hard stop and target on every
 signal, correct lot size for a fixed % risk, no signals in the Asian session / late Friday / around scheduled US
 data, and a hard daily stop. Treat it as a discipline layer around your own decisions, not as a money machine.
 
 ## Files
-- `dist/indicator.pine` — paste into TradingView Pine Editor (Indicators). Generated from `pine/core.pine`.
-- `dist/strategy.pine` — same logic as a strategy for the built-in tester and trade-list export.
+- `dist/indicator.pine` — v1 pullback model. Paste into TradingView Pine Editor. Generated from `pine/core.pine`.
+- `dist/strategy.pine` — v1 as a strategy for the built-in tester and trade-list export.
+- `dist/smc_indicator.pine` — v2 ICT/SMC model: Daily/4H/1H structure bias table, swing liquidity lines,
+  BOS/CHoCH labels, sweep diamonds, order-block boxes, buy/sell-limit setups with SL, TP1/TP2/TP3, R:R and lot
+  size, breakeven after TP1, same session/news/daily-loss controls. Generated from `pine/smc_core.pine`.
+- `dist/smc_strategy.pine` — v2 as a strategy (no breakeven move in the tester).
 - `spec/rules_v1.md` — the frozen rule set (single source of truth).
 - `py/` — data fetch, indicators matching Pine maths, rules, engine, metrics, baseline, walk-forward, parity.
 - `reports/` — `baseline.md`, `walkforward.md`, `research.md`, `baseline_trades.csv`.
@@ -50,7 +56,10 @@ py/.venv/bin/python py/data/fetch_histdata.py          # ~2 min, histdata.com M1
 py/.venv/bin/python -m pytest -q py/tests               # indicator maths vs Pine formulas
 py/.venv/bin/python py/baseline.py                      # reports/baseline.md
 py/.venv/bin/python py/walkforward.py                   # reports/walkforward.md
-py/.venv/bin/python py/research.py                      # in-sample concept comparison
+py/.venv/bin/python py/research.py                      # in-sample concept comparison (v1 family)
+py/.venv/bin/python py/research_smc.py m15 ob_top       # in-sample SMC variants (m15|m5, ob_top|mid)
+py/.venv/bin/python py/holdout_smc.py                   # one-time SMC holdout (do not iterate on it)
+py/.venv/bin/python py/data/fetch_histdata.py m5        # 5-minute CSVs (only needed for the m5 research)
 py/.venv/bin/python pine/build.py                       # regenerate dist/*.pine after editing pine/core.pine
 py/.venv/bin/python py/parity.py EURUSD trades.csv chart.csv   # after exporting from TradingView (see file)
 ```
@@ -65,3 +74,5 @@ EURUSD 0.9, GBPUSD 1.3, USDJPY 1.0, AUDUSD 1.1, USDCAD 1.5 spread, plus 0.3 slip
 - News blackouts are time-of-day windows plus a manual date list; Pine has no economic calendar.
 - The 3×ATR spike cooldown only reacts *after* a news candle.
 - Parity test (`py/parity.py`) needs the user's TradingView CSV exports; it has not yet been run.
+- SMC Daily bias: Python uses 00:00 UTC daily bars; TradingView `FX:` daily bars roll at 17:00 New York.
+  Structure trend rarely differs, but it can around the roll.
