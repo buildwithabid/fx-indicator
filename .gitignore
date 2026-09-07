@@ -1,0 +1,7 @@
+py/data/raw/
+py/data/zips/
+py/.venv/
+__pycache__/
+*.pyc
+node_modules/
+.pytest_cache/
