@@ -124,8 +124,8 @@ f_pipValueUsd() =>
     else
         v := 100000 * pipSize   // cross pair: approximate, use override input
     v
-f_lots(float slDist) =>
-    slPips = slDist / pipSize
+f_lots(float dist) =>
+    slPips = dist / pipSize
     raw = (equity * riskPct / 100) / (slPips * f_pipValueUsd())
     math.floor(raw * 100) / 100
 
@@ -159,7 +159,6 @@ bool sigLongNow  = false
 bool sigShortNow = false
 bool exitWinNow  = false
 bool exitLossNow = false
-float lastR      = na
 
 if barstate.isconfirmed
     // 0. daily reset
@@ -181,7 +180,6 @@ if barstate.isconfirmed
         if hitSl or hitTp
             float exitPx = hitSl ? slPx : tpPx
             float r = (exitPx - fill) / slDist * openDir
-            lastR := r
             dayR  += r
             totR  += r
             if r < 0
@@ -196,7 +194,7 @@ if barstate.isconfirmed
             if showLines and not na(slLine)
                 line.set_x2(slLine, bar_index)
                 line.set_x2(tpLine, bar_index)
-            label.new(bar_index, hitSl ? low : high, (hitSl ? "SL " : "TP ") + str.tostring(r, "+0.00;-0.00") + "R",
+            label.new(bar_index, hitSl ? low : high, (hitSl ? "SL " : "TP ") + (r >= 0 ? "+" : "") + str.tostring(r, "0.00") + "R",
                  style=hitSl ? label.style_label_up : label.style_label_down,
                  color=hitSl ? color.new(color.red, 20) : color.new(color.teal, 20), textcolor=color.white, size=size.small)
             openDir := 0
@@ -273,7 +271,7 @@ if showTable and barstate.islast
     f_cell(4, "Session (UTC " + str.format_time(timenow, "HH:mm", "UTC") + ")", sessTxt, eOk ? color.lime : color.gray)
     f_cell(5, "Status", status, statC)
     f_cell(6, "Today signals", str.tostring(daySignals) + " / " + str.tostring(maxSigDay), color.white)
-    f_cell(7, "Today losses / R", str.tostring(dayLosses) + " / " + str.tostring(maxLossDay) + "   " + str.tostring(dayR, "+0.0;-0.0") + "R", dayLosses > 0 ? color.orange : color.white)
+    f_cell(7, "Today losses / R", str.tostring(dayLosses) + " / " + str.tostring(maxLossDay) + "   " + (dayR >= 0 ? "+" : "") + str.tostring(dayR, "0.0") + "R", dayLosses > 0 ? color.orange : color.white)
     f_cell(8, "Open trade", openDir == 0 ? "—" : "SL " + str.tostring(slPx, format.mintick) + "  TP " + str.tostring(tpPx, format.mintick), color.white)
-    f_cell(9, "Simulated W / L", str.tostring(totWins) + " / " + str.tostring(totLosses) + "   " + str.tostring(totR, "+0.0;-0.0") + "R", totR >= 0 ? color.lime : color.orange)
-    f_cell(10, "Risk", str.tostring(riskPct, "0.00") + "% of " + str.tostring(equity, "#,###") + " USD", color.white)
+    f_cell(9, "Simulated W / L", str.tostring(totWins) + " / " + str.tostring(totLosses) + "   " + (totR >= 0 ? "+" : "") + str.tostring(totR, "0.0") + "R", totR >= 0 ? color.lime : color.orange)
+    f_cell(10, "Risk", str.tostring(riskPct, "0.00") + "% of " + str.tostring(equity, "0") + " USD", color.white)
